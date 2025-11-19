@@ -121,7 +121,10 @@ export const InputArea: React.FC<InputAreaProps> = ({
         {isLoading ? (
           <>
             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            <span>Weaving Timelines...</span>
+            <div className="flex flex-col items-center">
+              <span>Weaving Timelines...</span>
+              <span className="text-xs opacity-70">This may take a moment.</span>
+            </div>
           </>
         ) : (
           <>
