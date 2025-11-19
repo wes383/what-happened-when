@@ -26,7 +26,7 @@ export const generateTimelineOpenAI = async (apiKey: string, entities: string[],
 
     // Determine context limit
     // If custom model is provided, limit to 1M chars.
-    // If default (gpt-5-mini), use 1.5M chars (approx 375k tokens).
+    // If default (gpt-5-mini), use 1.5M chars.
     const contextLimit = modelName ? 1000000 : 1500000;
 
     // Construct the prompt context with fetched data

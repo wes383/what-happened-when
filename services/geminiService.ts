@@ -22,7 +22,7 @@ export const generateTimeline = async (apiKey: string, entities: string[], model
 
   // Determine context limit
   // Default Gemini 1.5/2.5 Flash has 1M context.
-  // Custom models will be limited to 1M chars as requested.
+  // Custom models will be limited to 1M chars.
   const contextLimit = 1000000;
 
   // Construct the prompt context with fetched data

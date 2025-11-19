@@ -74,7 +74,6 @@ const App: React.FC = () => {
       setSearchHistory(prev => {
         const newKey = JSON.stringify([...items].sort());
         const filtered = prev.filter(item => JSON.stringify([...item].sort()) !== newKey);
-        // Limit history to a generous amount (e.g., 50) so visual limiting controls the view
         return [items, ...filtered].slice(0, 50);
       });
     } catch (err) {
@@ -87,7 +86,7 @@ const App: React.FC = () => {
 
   const handleBack = () => {
     setEvents([]);
-    setEntities([]); // Clear entities so input is empty on return
+    setEntities([]);
   };
 
   const toggleEntityVisibility = (name: string) => {
@@ -100,7 +99,6 @@ const App: React.FC = () => {
     setHiddenEntities(newHidden);
   };
 
-  // Compute configuration for filters and coloring
   const entityConfigs: EntityConfig[] = useMemo(() => {
     return entities.map((name, index) => ({
       name,

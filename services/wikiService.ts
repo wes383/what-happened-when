@@ -20,8 +20,6 @@ export const fetchWikipediaData = async (term: string): Promise<{ title: string,
         const bestTitle = searchData.query.search[0].title;
 
         // 2. Fetch the FULL HTML content using 'parse'
-        // The 'extracts' API endpoint often truncates very long articles (like "United Kingdom"),
-        // so we fetch the full rendered HTML to ensure we get modern history sections.
         const contentParams = new URLSearchParams({
             action: 'parse',
             page: bestTitle,
