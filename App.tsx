@@ -4,10 +4,11 @@ import { TimelineView } from './components/TimelineView';
 import { FilterBar } from './components/FilterBar';
 import { generateTimeline } from './services/geminiService';
 import { generateTimelineOpenAI } from './services/openaiService';
-import { TimelineEvent, EntityConfig } from './types';
+import { TimelineEvent, EntityConfig, ProgressInfo } from './types';
 import { ENTITY_COLORS } from './constants';
 import { ArrowLeft, Settings } from 'lucide-react';
 import { ApiKeyModal } from './components/ApiKeyModal';
+import { Language, getTranslations } from './i18n';
 
 const App: React.FC = () => {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
@@ -21,6 +22,9 @@ const App: React.FC = () => {
   const [modelName, setModelName] = useState('');
   const [baseURL, setBaseURL] = useState('');
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [language, setLanguage] = useState<Language>('en');
+  const [wikiSources, setWikiSources] = useState<string[]>([]);
+  const [progressInfo, setProgressInfo] = useState<ProgressInfo | null>(null);
 
   useEffect(() => {
     const storedProvider = localStorage.getItem('timeline_provider') as 'gemini' | 'openai' | null;
@@ -30,6 +34,7 @@ const App: React.FC = () => {
     const storedKey = localStorage.getItem(`${currentProvider}_api_key`);
     const storedModelName = localStorage.getItem(`${currentProvider}_model_name`);
     const storedBaseURL = localStorage.getItem(`${currentProvider}_base_url`);
+    const storedLanguage = localStorage.getItem('timeline_language') as Language | null;
 
     if (storedKey) {
       setApiKey(storedKey);
@@ -37,6 +42,10 @@ const App: React.FC = () => {
       setBaseURL(storedBaseURL || '');
     } else {
       setIsApiKeyModalOpen(true);
+    }
+
+    if (storedLanguage) {
+      setLanguage(storedLanguage);
     }
   }, []);
 
@@ -60,16 +69,31 @@ const App: React.FC = () => {
     setIsLoading(true);
     setError(null);
     setHiddenEntities(new Set());
+    setProgressInfo(null);
 
     try {
-      let result: TimelineEvent[] = [];
+      let result;
       if (provider === 'openai') {
-        result = await generateTimelineOpenAI(apiKey, items, modelName, baseURL || undefined);
+        result = await generateTimelineOpenAI(
+          apiKey, 
+          items, 
+          modelName, 
+          baseURL || undefined, 
+          language,
+          (info) => setProgressInfo(info)
+        );
       } else {
-        result = await generateTimeline(apiKey, items, modelName);
+        result = await generateTimeline(
+          apiKey, 
+          items, 
+          modelName, 
+          language,
+          (info) => setProgressInfo(info)
+        );
       }
       setEntities(items);
-      setEvents(result);
+      setEvents(result.events);
+      setWikiSources(result.wikiSources);
 
       setSearchHistory(prev => {
         const newKey = JSON.stringify([...items].sort());
@@ -77,16 +101,23 @@ const App: React.FC = () => {
         return [items, ...filtered].slice(0, 50);
       });
     } catch (err) {
-      console.error(err);
-      setError("Failed to generate timeline. Please check your API key and try again.");
+      setError(t.errorGenerate);
     } finally {
       setIsLoading(false);
+      setProgressInfo(null);
     }
+  };
+
+  const toggleLanguage = () => {
+    const newLang: Language = language === 'en' ? 'zh' : 'en';
+    setLanguage(newLang);
+    localStorage.setItem('timeline_language', newLang);
   };
 
   const handleBack = () => {
     setEvents([]);
     setEntities([]);
+    setWikiSources([]);
   };
 
   const toggleEntityVisibility = (name: string) => {
@@ -108,6 +139,7 @@ const App: React.FC = () => {
   }, [entities, hiddenEntities]);
 
   const showTimeline = events.length > 0;
+  const t = getTranslations(language);
 
   return (
     <div className="flex flex-col h-screen w-full bg-slate-50 overflow-hidden font-sans">
@@ -119,14 +151,22 @@ const App: React.FC = () => {
         initialProvider={provider}
         initialModelName={modelName}
         initialBaseURL={baseURL}
+        language={language}
       />
 
-      {/* Settings Button */}
-      <div className="absolute top-4 right-4 z-50">
+      {/* Top Right Buttons */}
+      <div className="absolute top-4 right-4 z-50 flex gap-2">
+        <button
+          onClick={toggleLanguage}
+          className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all border border-slate-200"
+          title={t.language}
+        >
+          {language === 'en' ? 'EN' : '中文'}
+        </button>
         <button
           onClick={() => setIsApiKeyModalOpen(true)}
           className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all"
-          title="Settings"
+          title={t.settings}
         >
           <Settings size={20} />
         </button>
@@ -140,6 +180,8 @@ const App: React.FC = () => {
             isLoading={isLoading}
             defaultItems={entities}
             recentSearches={searchHistory}
+            language={language}
+            progressInfo={progressInfo}
           />
           {error && (
             <div className="max-w-2xl w-full mt-4 p-4 bg-red-50 text-red-600 text-sm rounded-xl text-center border border-red-100 shadow-sm animate-fade-in">
@@ -148,9 +190,7 @@ const App: React.FC = () => {
           )}
         </div>
       ) : (
-        /* Timeline View - Full Screen with Header */
         <>
-          {/* Header with Back Button and Filters */}
           <div className="flex-none z-40 bg-slate-50/80 backdrop-blur-sm transition-all relative">
             <div className="flex items-center justify-center px-4 py-4 relative min-h-[60px]">
               {/* Back Button - Absolute Left */}
@@ -158,8 +198,8 @@ const App: React.FC = () => {
                 <button
                   onClick={handleBack}
                   className="p-2.5 rounded-full bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-all duration-200 shadow-sm border border-slate-200 group"
-                  aria-label="Back to search"
-                  title="Back to search"
+                  aria-label={t.backToSearch}
+                  title={t.backToSearch}
                 >
                   <ArrowLeft size={18} className="group-hover:-translate-x-0.5 transition-transform" />
                 </button>
@@ -174,7 +214,7 @@ const App: React.FC = () => {
 
           {/* Main Timeline Canvas */}
           <div className="flex-1 overflow-hidden relative animate-fade-in-up">
-            <TimelineView events={events} entityConfigs={entityConfigs} />
+            <TimelineView events={events} entityConfigs={entityConfigs} wikiSources={wikiSources} language={language} />
           </div>
         </>
       )}

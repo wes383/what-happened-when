@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Key, Save, AlertCircle } from 'lucide-react';
+import { Language, getTranslations } from '../i18n';
 
 interface ApiKeyModalProps {
     isOpen: boolean;
@@ -9,6 +10,7 @@ interface ApiKeyModalProps {
     initialProvider?: 'gemini' | 'openai';
     initialModelName?: string;
     initialBaseURL?: string;
+    language: Language;
 }
 
 export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
@@ -18,13 +20,15 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
     initialKey = '',
     initialProvider = 'gemini',
     initialModelName = '',
-    initialBaseURL = ''
+    initialBaseURL = '',
+    language
 }) => {
     const [apiKey, setApiKey] = useState(initialKey);
     const [provider, setProvider] = useState<'gemini' | 'openai'>(initialProvider);
     const [modelName, setModelName] = useState(initialModelName);
     const [baseURL, setBaseURL] = useState(initialBaseURL);
     const [error, setError] = useState('');
+    const t = getTranslations(language);
 
     useEffect(() => {
         setApiKey(initialKey);
@@ -38,7 +42,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!apiKey.trim()) {
-            setError('API Key is required');
+            setError(t.apiKeyRequired);
             return;
         }
         onSave(apiKey.trim(), provider, modelName.trim(), baseURL.trim());
@@ -54,8 +58,8 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
                             <Key size={24} />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-slate-800">Enter API Key</h2>
-                            <p className="text-sm text-slate-500">Required to generate timelines</p>
+                            <h2 className="text-xl font-bold text-slate-800">{t.enterApiKey}</h2>
+                            <p className="text-sm text-slate-500">{t.requiredToGenerate}</p>
                         </div>
                     </div>
                 </div>
@@ -89,7 +93,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
 
                     <div>
                         <label htmlFor="apiKey" className="block text-sm font-medium text-slate-700 mb-1">
-                            {provider === 'gemini' ? 'Google Gemini API Key' : 'API Key'}
+                            {provider === 'gemini' ? t.geminiApiKeyLabel : t.apiKeyLabel}
                         </label>
                         <input
                             id="apiKey"
@@ -110,14 +114,14 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
                             </div>
                         )}
                         <p className="mt-2 text-xs text-slate-400">
-                            Your key is stored locally in your browser. We do not save it on any server.
+                            {t.apiKeySecurityWarning}
                         </p>
                     </div>
 
                     {provider === 'openai' && (
                         <div>
                             <label htmlFor="baseURL" className="block text-sm font-medium text-slate-700 mb-1">
-                                Base URL (Optional)
+                                {t.baseUrlOptional}
                             </label>
                             <input
                                 id="baseURL"
@@ -132,7 +136,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
 
                     <div>
                         <label htmlFor="modelName" className="block text-sm font-medium text-slate-700 mb-1">
-                            Model Name (Optional)
+                            {t.modelNameOptional}
                         </label>
                         <input
                             id="modelName"
@@ -143,7 +147,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
                             className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all text-slate-800 placeholder:text-slate-400"
                         />
                         <p className="mt-2 text-xs text-slate-400">
-                            Leave blank to use default. Custom models have a 1M character context limit.
+                            {t.modelNameHint}
                         </p>
                     </div>
 
@@ -154,7 +158,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
                                 onClick={onClose}
                                 className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors"
                             >
-                                Cancel
+                                {t.cancel}
                             </button>
                         )}
                         <button
@@ -163,7 +167,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
                             className="flex items-center gap-2 px-6 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-slate-900/20"
                         >
                             <Save size={18} />
-                            Save Key
+                            {t.saveKey}
                         </button>
                     </div>
                 </form>

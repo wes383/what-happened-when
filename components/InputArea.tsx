@@ -1,22 +1,28 @@
 import React, { useState, KeyboardEvent, useMemo } from 'react';
 import { Plus, X, Search, History } from 'lucide-react';
-import { SAMPLE_QUERIES } from '../constants';
+import { Language, getTranslations } from '../i18n';
+import { ProgressInfo } from '../types';
 
 interface InputAreaProps {
   onGenerate: (items: string[]) => void;
   isLoading: boolean;
   defaultItems?: string[];
   recentSearches?: string[][];
+  language: Language;
+  progressInfo?: ProgressInfo | null;
 }
 
 export const InputArea: React.FC<InputAreaProps> = ({
   onGenerate,
   isLoading,
   defaultItems = [],
-  recentSearches = []
+  recentSearches = [],
+  language,
+  progressInfo = null
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [items, setItems] = useState<string[]>(defaultItems);
+  const t = getTranslations(language);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && inputValue.trim()) {
@@ -47,7 +53,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
   };
 
   const displaySuggestions = useMemo(() => {
-    const all = [...recentSearches, ...SAMPLE_QUERIES];
+    const all = [...recentSearches, ...t.sampleQueries];
     const unique: string[][] = [];
     const seen = new Set<string>();
 
@@ -59,13 +65,13 @@ export const InputArea: React.FC<InputAreaProps> = ({
       }
     }
     return unique;
-  }, [recentSearches]);
+  }, [recentSearches, t.sampleQueries]);
 
   return (
     <div className="w-full max-w-2xl mx-auto p-8 bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 transition-all duration-300">
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-slate-800 mb-2 tracking-tight">What Happened When...</h1>
-        <p className="text-slate-500 text-lg">Merge histories. Discover connections.</p>
+        <h1 className="text-4xl font-bold text-slate-800 mb-2 tracking-tight">{t.title}</h1>
+        <p className="text-slate-500 text-lg">{t.subtitle}</p>
       </div>
 
       {/* Active Tags */}
@@ -95,7 +101,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Type and press Enter..."
+          placeholder={t.inputPlaceholder}
           disabled={isLoading}
           className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 focus:bg-white transition-all text-slate-800 placeholder:text-slate-400 text-lg"
         />
@@ -104,7 +110,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
           disabled={!inputValue.trim() || isLoading}
           className="absolute right-2.5 p-2 bg-white text-slate-400 hover:text-brand-600 rounded-lg border border-slate-200 hover:border-brand-200 transition-all disabled:opacity-50 hover:shadow-sm"
         >
-          <span className="sr-only">Add</span>
+          <span className="sr-only">{t.addButton}</span>
           <Plus size={20} />
         </button>
       </div>
@@ -122,22 +128,47 @@ export const InputArea: React.FC<InputAreaProps> = ({
           <>
             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             <div className="flex flex-col items-center">
-              <span>Weaving Timelines...</span>
-              <span className="text-xs opacity-70">This may take a moment.</span>
+              <span>{t.generatingButton}</span>
+              <span className="text-xs opacity-70">{t.generatingSubtext}</span>
             </div>
           </>
         ) : (
           <>
             <Search size={20} />
-            <span>Generate Timeline</span>
+            <span>{t.generateButton}</span>
           </>
         )}
       </button>
 
+      {/* Progress Bar */}
+      {isLoading && progressInfo && progressInfo.totalChunks > 1 && (
+        <div className="mt-4 space-y-2 animate-fade-in">
+          <div className="flex justify-between text-xs text-slate-600">
+            <span>
+              {language === 'zh' 
+                ? `处理中: ${progressInfo.currentEntity} (${progressInfo.entityIndex}/${progressInfo.totalEntities})`
+                : `Processing: ${progressInfo.currentEntity} (${progressInfo.entityIndex}/${progressInfo.totalEntities})`
+              }
+            </span>
+            <span>
+              {language === 'zh'
+                ? `分块 ${progressInfo.currentChunk}/${progressInfo.totalChunks}`
+                : `Chunk ${progressInfo.currentChunk}/${progressInfo.totalChunks}`
+              }
+            </span>
+          </div>
+          <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+            <div 
+              className="bg-slate-900 h-full rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${((progressInfo.currentChunk - 1) / progressInfo.totalChunks) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Quick Samples / History */}
       {!isLoading && displaySuggestions.length > 0 && (
         <div className="mt-8 pt-6 border-t border-slate-100">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 text-center">History</p>
           <div className="flex flex-wrap justify-center gap-2 max-h-[7.5rem] overflow-hidden">
             {displaySuggestions.map((sample, i) => (
               <button
