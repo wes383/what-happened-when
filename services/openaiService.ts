@@ -60,13 +60,12 @@ const extractEventsFromChunk = async (
         
         RULES:
         1. Extract up to 12 most important events with explicit dates/ranges
-        2. Priority: birth, death, founding, major achievements only
-        3. For ranges: use mid-point year (e.g., "1920s" → year: 1925, displayDate: "1920s")
-        4. Only dates explicitly stated in text - no guessing
-        5. Format: year (integer, negative for BC), displayDate, title (brief), description
-        6. Entity field must be: "${entity}"
-        7. ${languageInstruction}
-        8. Skip minor events - focus on historical significance
+        2. For ranges: use mid-point year (e.g., "1920s" → year: 1925, displayDate: "1920s")
+        3. Only dates explicitly stated in text - no guessing
+        4. Format: year (integer, negative for BC), displayDate, title (brief), description (<40 words)
+        5. Entity field must be: "${entity}"
+        6. ${languageInstruction}
+        7. Skip minor events - focus on historical significance
         
         Return JSON: {"events": [{"year": number, "displayDate": string, "title": string, "description": string, "entity": string}]}
     `;
