@@ -47,8 +47,8 @@ const extractEventsFromChunk = async (
     onProgress?: (current: number, total: number) => void
 ): Promise<TimelineEvent[]> => {
     const languageInstruction = language === 'zh' 
-        ? 'Generate all event titles and descriptions in CHINESE (中文). For dates like "123 BC", use "公元前" instead of "BC".'
-        : 'Generate all event titles and descriptions in ENGLISH.';
+        ? 'Generate all event titles, descriptions, AND displayDate in CHINESE (中文). For dates like "123 BC", use "公元前123年" instead of "123 BC". For month names, use Chinese (e.g., "1月" not "January").'
+        : 'Generate all event titles, descriptions, AND displayDate in ENGLISH.';
 
     const prompt = `
         Extract timeline events for: ${entity}
@@ -218,7 +218,7 @@ export const generateTimelineOpenAI = async (
                 3. For ranges: use mid-point year (e.g., "1920s" → year: 1925, displayDate: "1920s")
                 4. Format: year (integer, negative for BC), displayDate, title, description (<20 words)
                 5. Entity field: "${entity}"
-                6. ${language === 'zh' ? 'Chinese content. Use "公元前" not "BC".' : 'English content.'}
+                6. ${language === 'zh' ? 'ALL content in Chinese (中文). Use "公元前123年" not "123 BC". Use "1月" not "January".' : 'ALL content in English.'}
                 7. Only most significant historical events
                 8. Sort chronologically
                 
@@ -245,10 +245,13 @@ export const generateTimelineOpenAI = async (
         }
     }
 
+    // More aggressive deduplication
     const uniqueEvents = Array.from(
         new Map(
             allEvents.map(event => {
-                const key = `${event.entity}-${event.year}-${event.title}`;
+                // Normalize title for better deduplication
+                const normalizedTitle = event.title.toLowerCase().trim().replace(/[^\w\s]/g, '');
+                const key = `${event.entity}-${event.year}-${event.displayDate}-${normalizedTitle}`;
                 return [key, event];
             })
         ).values()

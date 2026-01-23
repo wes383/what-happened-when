@@ -155,28 +155,30 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ events, entityConfig
 
 
       {/* Mobile View */}
-      <div className="md:hidden flex flex-col relative pb-20 px-4 overflow-y-auto h-full">
-        <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-slate-200 z-0"></div>
-        <div className="py-8">
-          {visibleEvents.map((event, index) => {
-            const colors = getEntityColor(event.entity);
-            return (
-              <div key={`${event.entity}-${event.year}-${index}`} className="relative pl-16 py-6 group">
-                <div className={`
-                  absolute left-[29px] top-10 w-4 h-4 rounded-full border-4 border-slate-50 transform transition-all duration-300 z-10
-                  ${colors.bg.replace('bg-', 'bg-')} ring-1 ring-slate-300 group-hover:scale-110
-                `}></div>
+      <div className="md:hidden flex flex-col relative h-full overflow-hidden">
+        <div className="flex-1 overflow-y-auto px-4">
+          <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-slate-200 z-0"></div>
+          <div className="py-8 pb-4">
+            {visibleEvents.map((event, index) => {
+              const colors = getEntityColor(event.entity);
+              return (
+                <div key={`${event.entity}-${event.year}-${index}`} className="relative pl-16 py-6 group">
+                  <div className={`
+                    absolute left-[29px] top-10 w-4 h-4 rounded-full border-4 border-slate-50 transform transition-all duration-300 z-10
+                    ${colors.bg.replace('bg-', 'bg-')} ring-1 ring-slate-300 group-hover:scale-110
+                  `}></div>
 
-                <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300">
-                  <EventContent event={event} colors={colors} />
+                  <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300">
+                    <EventContent event={event} colors={colors} />
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
         
         {/* Footer - Mobile */}
-        <div className="sticky bottom-0 left-0 right-0 bg-slate-50/95 backdrop-blur-sm border-t border-slate-200 px-4 py-3 text-center">
+        <div className="flex-none bg-slate-50/95 backdrop-blur-sm border-t border-slate-200 px-4 py-3 text-center">
           <p className="text-xs text-slate-500">
             {wikiSources.length > 0 && (
               <>
