@@ -16,11 +16,9 @@ export interface TimelineResult {
 }
 
 export interface ProgressInfo {
-  currentEntity: string;
-  currentChunk: number;
-  totalChunks: number;
-  entityIndex: number;
-  totalEntities: number;
+  completedTasks: number;
+  totalTasks: number;
+  phase: 'fetching_wiki' | 'extracting_events';
 }
 
 export interface EntityColor {

@@ -31,11 +31,14 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
     const t = getTranslations(language);
 
     useEffect(() => {
-        setApiKey(initialKey);
-        setProvider(initialProvider);
-        setModelName(initialModelName);
-        setBaseURL(initialBaseURL);
-    }, [initialKey, initialProvider, initialModelName, initialBaseURL]);
+        if (isOpen) {
+            setApiKey(initialKey);
+            setProvider(initialProvider);
+            setModelName(initialModelName);
+            setBaseURL(initialBaseURL);
+            setError('');
+        }
+    }, [isOpen, initialKey, initialProvider, initialModelName, initialBaseURL]);
 
     if (!isOpen) return null;
 

@@ -158,7 +158,7 @@ const App: React.FC = () => {
       <div className="absolute top-4 right-4 z-50 flex gap-2">
         <button
           onClick={toggleLanguage}
-          className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all border border-slate-200"
+          className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all"
           title={t.language}
         >
           {language === 'en' ? 'EN' : '中文'}

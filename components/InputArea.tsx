@@ -141,26 +141,27 @@ export const InputArea: React.FC<InputAreaProps> = ({
       </button>
 
       {/* Progress Bar */}
-      {isLoading && progressInfo && progressInfo.totalChunks > 1 && (
+      {isLoading && progressInfo && progressInfo.totalTasks > 1 && (
         <div className="mt-4 space-y-2 animate-fade-in">
           <div className="flex justify-between text-xs text-slate-600">
             <span>
               {language === 'zh' 
-                ? `处理中: ${progressInfo.currentEntity} (${progressInfo.entityIndex}/${progressInfo.totalEntities})`
-                : `Processing: ${progressInfo.currentEntity} (${progressInfo.entityIndex}/${progressInfo.totalEntities})`
+                ? progressInfo.phase === 'fetching_wiki' 
+                  ? `获取 Wikipedia 数据...` 
+                  : `提取事件中...`
+                : progressInfo.phase === 'fetching_wiki' 
+                  ? `Fetching Wikipedia data...` 
+                  : `Extracting events...`
               }
             </span>
             <span>
-              {language === 'zh'
-                ? `分块 ${progressInfo.currentChunk}/${progressInfo.totalChunks}`
-                : `Chunk ${progressInfo.currentChunk}/${progressInfo.totalChunks}`
-              }
+              {progressInfo.completedTasks}/{progressInfo.totalTasks}
             </span>
           </div>
           <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
             <div 
               className="bg-slate-900 h-full rounded-full transition-all duration-300 ease-out"
-              style={{ width: `${((progressInfo.currentChunk - 1) / progressInfo.totalChunks) * 100}%` }}
+              style={{ width: `${(progressInfo.completedTasks / progressInfo.totalTasks) * 100}%` }}
             />
           </div>
         </div>

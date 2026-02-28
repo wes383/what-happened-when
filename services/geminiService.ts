@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { TimelineEvent, TimelineResponse, TimelineResult } from "../types";
+import { TimelineEvent, TimelineResponse, TimelineResult, ProgressInfo } from "../types";
 import { fetchWikipediaData } from "./wikiService";
 
 const splitIntoChunks = (content: string, maxChunkSize: number): string[] => {
@@ -156,17 +156,26 @@ export const generateTimeline = async (
   entities: string[], 
   modelName?: string, 
   language?: string,
-  onProgress?: (info: { currentEntity: string; currentChunk: number; totalChunks: number; entityIndex: number; totalEntities: number }) => void
+  onProgress?: (info: ProgressInfo) => void
 ): Promise<TimelineResult> => {
   const ai = getClient(apiKey);
+
+  onProgress?.({ completedTasks: 0, totalTasks: entities.length, phase: 'fetching_wiki' });
 
   const normalizationMap = await normalizeAndTranslateEntities(apiKey, entities, modelName);
   const normalizedEntities = entities.map(e => normalizationMap.get(e) || e);
   
+  let wikiFetchCompleted = 0;
   const wikiResults = await Promise.all(
     normalizedEntities.map(async (normalizedEntity, index) => {
       const originalEntity = entities[index];
       const data = await fetchWikipediaData(normalizedEntity);
+      wikiFetchCompleted++;
+      onProgress?.({ 
+        completedTasks: wikiFetchCompleted, 
+        totalTasks: entities.length, 
+        phase: 'fetching_wiki' 
+      });
       return { entity: originalEntity, data, searchTerm: normalizedEntity };
     })
   );
@@ -176,44 +185,45 @@ export const generateTimeline = async (
     .map(({ data }) => data!.title);
 
   const maxChunkSize = 40000;
-  const allEvents: TimelineEvent[] = [];
+  
+  const totalChunks = wikiResults.reduce((sum, { data }) => {
+    if (data && data.content) {
+      return sum + splitIntoChunks(data.content, maxChunkSize).length;
+    }
+    return sum + 1;
+  }, 0);
 
-  for (let entityIdx = 0; entityIdx < wikiResults.length; entityIdx++) {
+  let completedChunks = 0;
+  onProgress?.({ completedTasks: 0, totalTasks: totalChunks, phase: 'extracting_events' });
+
+  const processEntity = async (entityIdx: number): Promise<TimelineEvent[]> => {
     const { entity, data } = wikiResults[entityIdx];
     
     if (data && data.content) {
       const chunks = splitIntoChunks(data.content, maxChunkSize);
 
-      const chunkEvents: TimelineEvent[][] = [];
-      for (let index = 0; index < chunks.length; index++) {
-        const chunk = chunks[index];
-        
-        const events = await extractEventsFromChunk(
-          ai, 
-          entity, 
-          chunk, 
-          index, 
-          chunks.length, 
-          modelName || 'gemini-2.5-flash', 
-          language,
-          (current, total) => {
-            if (onProgress) {
-              onProgress({
-                currentEntity: entity,
-                currentChunk: current,
-                totalChunks: total,
-                entityIndex: entityIdx + 1,
-                totalEntities: entities.length
-              });
-            }
-          }
-        );
-        
-        chunkEvents.push(events);
-      }
+      const chunkEvents = await Promise.all(
+        chunks.map(async (chunk, index) => {
+          const events = await extractEventsFromChunk(
+            ai, 
+            entity, 
+            chunk, 
+            index, 
+            chunks.length, 
+            modelName || 'gemini-2.5-flash', 
+            language
+          );
+          completedChunks++;
+          onProgress?.({ 
+            completedTasks: completedChunks, 
+            totalTasks: totalChunks, 
+            phase: 'extracting_events' 
+          });
+          return events;
+        })
+      );
 
-      const flatEvents = chunkEvents.flat();
-      allEvents.push(...flatEvents);
+      return chunkEvents.flat();
     } else {
       const prompt = `
         Generate timeline for: ${entity}
@@ -260,14 +270,29 @@ export const generateTimeline = async (
         });
 
         const result = JSON.parse(response.text || "{}") as TimelineResponse;
-        if (result.events) {
-          allEvents.push(...result.events);
-        }
+        completedChunks++;
+        onProgress?.({ 
+          completedTasks: completedChunks, 
+          totalTasks: totalChunks, 
+          phase: 'extracting_events' 
+        });
+        return result.events || [];
       } catch (error) {
-        // Silent error handling
+        completedChunks++;
+        onProgress?.({ 
+          completedTasks: completedChunks, 
+          totalTasks: totalChunks, 
+          phase: 'extracting_events' 
+        });
+        return [];
       }
     }
-  }
+  };
+
+  const allEventsArrays = await Promise.all(
+    wikiResults.map((_, idx) => processEntity(idx))
+  );
+  const allEvents = allEventsArrays.flat();
 
   // More aggressive deduplication
   const uniqueEvents = Array.from(
